@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>LuLu List</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height: 100vh; color: #fff; }
+
+  /* Header */
+  .header { background: rgba(255,255,255,0.06); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .badge { background: rgba(67,206,162,0.15); border: 1px solid rgba(67,206,162,0.3); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: #43cea2; font-weight: 600; }
+  .btn-sm { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 6px 14px; color: #fff; font-size: 12px; cursor: pointer; font-family: inherit; }
+
+  .container { max-width: 560px; margin: 0 auto; padding: 20px 16px; }
+
+  /* Tabs */
+  .tabs { display: flex; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 4px; margin-bottom: 16px; gap: 4px; }
+  .tab { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.2s; background: transparent; color: rgba(255,255,255,0.45); }
+  .tab.active { background: linear-gradient(135deg, #43cea2, #185a9d); color: #fff; }
+
+  /* Card */
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; padding: 20px; }
+  .card-label { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 10px; font-weight: 500; }
+  .card-sublabel { font-size: 11px; color: rgba(255,255,255,0.25); margin-bottom: 10px; }
+
+  textarea { width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 14px; color: #fff; font-size: 15px; font-family: inherit; resize: none; outline: none; line-height: 1.6; }
+  textarea::placeholder { color: rgba(255,255,255,0.25); }
+  textarea:focus { border-color: rgba(67,206,162,0.5); }
+
+  /* Photo */
+  .photo-area { width: 100%; min-height: 160px; background: rgba(255,255,255,0.04); border: 2px dashed rgba(255,255,255,0.15); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+  .photo-area:active { background: rgba(67,206,162,0.07); border-color: rgba(67,206,162,0.4); }
+  .photo-area img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; border-radius: 12px; }
+  .photo-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.7)); padding: 10px 14px 12px; font-size: 12px; color: rgba(255,255,255,0.8); }
+  .photo-icon { font-size: 36px; }
+  .photo-label { font-size: 14px; color: rgba(255,255,255,0.5); }
+  .photo-sublabel { font-size: 11px; color: rgba(255,255,255,0.25); }
+  #fileInput { display: none; }
+
+  /* Buttons */
+  .btn-primary { width: 100%; margin-top: 14px; padding: 16px; background: linear-gradient(135deg, #43cea2, #185a9d); border: none; border-radius: 14px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-print { width: 100%; padding: 14px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; color: #fff; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; margin-bottom: 10px; }
+  .btn-share { width: 100%; padding: 14px; background: rgba(67,206,162,0.1); border: 1px solid rgba(67,206,162,0.25); border-radius: 14px; color: #43cea2; font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; margin-bottom: 12px; }
+  .hint { text-align: center; color: rgba(255,255,255,0.2); font-size: 11px; margin-top: 12px; }
+
+  /* Loading overlay */
+  .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,32,39,0.92); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; backdrop-filter: blur(6px); }
+  .loading-overlay.hidden { display: none; }
+  .loading-spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #43cea2; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  .loading-text { font-size: 16px; color: rgba(255,255,255,0.7); font-weight: 500; }
+  .loading-sub { font-size: 12px; color: rgba(255,255,255,0.3); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Progress */
+  .progress-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #43cea2, #185a9d); border-radius: 4px; transition: width 0.4s ease; }
+
+  /* List */
+  .cat-section { margin-bottom: 18px; }
+  .cat-header { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; padding-left: 2px; }
+  .cat-icon { font-size: 16px; }
+  .cat-name { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+
+  .item-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 13px 14px; margin-bottom: 7px; transition: all 0.2s; }
+  .item-card.checked { background: rgba(67,206,162,0.07); border-color: rgba(67,206,162,0.25); }
+  .item-row { display: flex; align-items: center; gap: 12px; }
+  .checkbox { width: 44px; height: 44px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.25); background: transparent; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 16px; }
+  .checkbox.checked { background: linear-gradient(135deg, #43cea2, #185a9d); border: none; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-size: 15px; font-weight: 500; transition: all 0.2s; }
+  .item-name.checked { color: rgba(255,255,255,0.3); text-decoration: line-through; }
+  .item-meta { display: flex; gap: 8px; align-items: center; margin-top: 3px; flex-wrap: wrap; }
+  .item-qty { font-size: 12px; color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); border-radius: 6px; padding: 1px 7px; }
+  .item-note { font-size: 11px; color: #43cea2; font-weight: 500; }
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-icon { width: 44px; height: 44px; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .btn-edit { background: rgba(255,255,255,0.08); }
+  .btn-del { background: rgba(255,80,80,0.1); }
+
+  /* Forms */
+  .edit-form input, .edit-form select, .add-form input, .add-form select {
+    width: 100%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 12px 14px; color: #fff; font-size: 14px;
+    font-family: inherit; outline: none; margin-bottom: 8px;
+  }
+  .edit-form select, .add-form select { background: #1a3344; }
+  .row-2 { display: flex; gap: 8px; }
+  .row-2 input:first-child { width: 80px; flex-shrink: 0; }
+  .row-2 input:last-child { flex: 1; }
+  .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+  .btn-save { flex: 1; padding: 12px; background: linear-gradient(135deg, #43cea2, #185a9d); border: none; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-cancel { flex: 1; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; font-size: 14px; cursor: pointer; font-family: inherit; }
+
+  .btn-add-item { width: 100%; padding: 14px; background: transparent; border: 2px dashed rgba(255,255,255,0.15); border-radius: 12px; color: rgba(255,255,255,0.35); font-size: 14px; cursor: pointer; font-family: inherit; margin-bottom: 10px; }
+  .add-form { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(67,206,162,0.95); color: #0f2027; padding: 12px 22px; border-radius: 30px; font-size: 14px; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+  .toast.error { background: rgba(255,80,80,0.95); color: #fff; }
+
+  /* Confirm dialog */
+  .confirm-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .confirm-overlay.hidden { display: none; }
+  .confirm-box { background: #1a3344; border: 1px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 24px; max-width: 320px; width: 100%; }
+  .confirm-title { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .confirm-msg { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 20px; line-height: 1.5; }
+  .confirm-btns { display: flex; gap: 10px; }
+  .confirm-yes { flex: 1; padding: 12px; background: rgba(255,80,80,0.2); border: 1px solid rgba(255,80,80,0.4); border-radius: 10px; color: #ff6666; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .confirm-no { flex: 1; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: #fff; font-size: 14px; cursor: pointer; font-family: inherit; }
+
+  .done-msg { text-align: center; padding: 20px; color: #43cea2; font-size: 15px; font-weight: 600; }
+
+  /* Print */
+  @media print {
+    body { background: #fff !important; color: #000 !important; }
+    .header, .progress-bar, .btn-print, .btn-share, .btn-add-item, .add-form,
+    .item-actions, #addSection, #doneMsg, .btn-sm, .badge, .loading-overlay,
+    .confirm-overlay, .toast { display: none !important; }
+    .container { padding: 0 8px !important; max-width: 100% !important; }
+    #listView { display: block !important; }
+    .print-header { display: block !important; }
+    .cat-name { color: #333 !important; }
+    .cat-section { margin-bottom: 12px; page-break-inside: avoid; }
+    .item-card { background: #fff !important; border: 1px solid #ddd !important; border-radius: 4px !important; padding: 8px 12px !important; margin-bottom: 4px !important; }
+    .item-name { color: #000 !important; font-size: 13px !important; }
+    .item-note { color: #0077aa !important; }
+    .item-qty { color: #555 !important; background: #eee !important; }
+    .checkbox { border: 1.5px solid #999 !important; background: #fff !important; width: 16px !important; height: 16px !important; min-width: 16px; }
+    .checkbox.checked { background: #333 !important; }
+  }
+  .print-header { display: none; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 2px solid #eee; }
+  .print-header h2 { font-size: 18px; color: #000; }
+  .print-header p { font-size: 12px; color: #666; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">Organizing your list...</div>
+  <div class="loading-sub" id="loadingSub">This takes about 5 seconds</div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="confirm-overlay hidden" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Start new list?</div>
+    <div class="confirm-msg">Your current list will be cleared. Make sure you're done ordering first.</div>
+    <div class="confirm-btns">
+      <button class="confirm-yes" onclick="confirmNewList()">Yes, clear it</button>
+      <button class="confirm-no" onclick="document.getElementById('confirmOverlay').classList.add('hidden')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <div>
+    <div class="header-title">🛒 LuLu List</div>
+    <div class="header-sub">Smart grocery organizer</div>
+  </div>
+  <div id="headerRight" style="display:flex;gap:8px;align-items:center;"></div>
+</div>
+
+<div class="container">
+
+  <!-- INPUT VIEW -->
+  <div id="inputView">
+    <div class="tabs">
+      <button class="tab active" id="tabText" onclick="switchTab('text')">💬 Paste Text</button>
+      <button class="tab" id="tabPhoto" onclick="switchTab('photo')">📷 Photo of List</button>
+    </div>
+
+    <div id="textPanel" class="card">
+      <div class="card-label">Paste your maid's WhatsApp message:</div>
+      <div class="card-sublabel">Works in English or Arabic 🇬🇧 🇸🇦</div>
+      <textarea id="rawText" rows="6" placeholder="Sir we need freshmilk, chicken breast fillet, downy, clorox...&#10;&#10;أو أكتبي القائمة بالعربي هنا..."></textarea>
+      <button class="btn-primary" id="organizeBtn" onclick="organizeText()">✨ Organize My List</button>
+    </div>
+
+    <div id="photoPanel" class="card" style="display:none">
+      <div class="card-label">Take a photo or upload the handwritten list:</div>
+      <div class="card-sublabel">Works with handwritten, printed, English &amp; Arabic 📝</div>
+      <div class="photo-area" id="photoArea" onclick="document.getElementById('fileInput').click()">
+        <div class="photo-icon">📷</div>
+        <div class="photo-label">Tap to take photo or choose from gallery</div>
+        <div class="photo-sublabel">JPG, PNG supported</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
+      <button class="btn-primary" id="photoBtn" onclick="organizePhoto()" disabled>✨ Read &amp; Organize</button>
+    </div>
+
+    <div class="hint">Typos auto-corrected · Sorted by LuLu aisle · English &amp; Arabic supported</div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="listView" style="display:none">
+    <div class="print-header" id="printHeader">
+      <h2>🛒 LuLu Grocery List</h2>
+      <p id="printDate"></p>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div id="groupedList"></div>
+    <div style="margin-top:8px;">
+      <button class="btn-share" onclick="shareList()">📋 Copy List as Text</button>
+      <button class="btn-print" onclick="doPrint()">🖨️ Print List</button>
+    </div>
+    <div id="addSection">
+      <button class="btn-add-item" onclick="showAddForm()">+ Add missing item</button>
+    </div>
+    <div id="doneMsg"></div>
+  </div>
+
+</div>
+
+<script>
+const CATEGORIES = {
+  "Dairy & Refrigerated": "🥛",
+  "Frozen Foods": "❄️",
+  "Meat & Poultry": "🍗",
+  "Fruits & Vegetables": "🥦",
+  "Bakery & Bread": "🍞",
+  "Cooking & Pantry": "🫙",
+  "Household & Cleaning": "🧴",
+  "Beverages": "🥤",
+  "Snacks & Sweets": "🍫",
+  "Personal Care": "🧼",
+  "Other": "🛒"
+};
+
+const SYSTEM_PROMPT = `You are a grocery list parser. Extract all items from grocery messages or photos of lists. The list may be handwritten or typed, in English or Arabic, with typos or informal language.
+
+Return a JSON array ONLY — no markdown, no explanation, nothing else.
+
+Each item must have:
+- "id": unique integer
+- "name": corrected, properly capitalized English product name (translate from Arabic if needed)
+- "category": one of exactly these strings: "Dairy & Refrigerated", "Frozen Foods", "Meat & Poultry", "Fruits & Vegetables", "Bakery & Bread", "Cooking & Pantry", "Household & Cleaning", "Beverages", "Snacks & Sweets", "Personal Care", "Other"
+- "qty": quantity as a string e.g. "2", "500g", "1 pack" — extract from text if mentioned, otherwise "1"
+- "note": any useful note like "Frozen", "Diet", "Large", "Almarai brand" — or empty string ""
+
+Important rules:
+- Fix all spelling errors silently
+- Frozen chicken items (nuggets, fillets, strips) → category "Frozen Foods", note "Frozen"
+- Diet/light drinks → note "Diet"
+- If quantity mentioned (e.g. "2 bottles", "3 packs"), capture it in qty field
+- Translate Arabic item names to English
+- Return ONLY the raw JSON array`;
+
+let items = [];
+let checked = {};
+let editingId = null;
+let selectedImageBase64 = null;
+let selectedImageType = null;
+
+function switchTab(tab) {
+  document.getElementById('tabText').classList.toggle('active', tab === 'text');
+  document.getElementById('tabPhoto').classList.toggle('active', tab === 'photo');
+  document.getElementById('textPanel').style.display = tab === 'text' ? 'block' : 'none';
+  document.getElementById('photoPanel').style.display = tab === 'photo' ? 'block' : 'none';
+}
+
+function handlePhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  selectedImageType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target.result;
+    selectedImageBase64 = result.split(',')[1];
+    document.getElementById('photoArea').innerHTML = `<img src="${result}" alt="List preview"><div class="photo-overlay">📋 Tap to change photo</div>`;
+    document.getElementById('photoArea').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('photoBtn').disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showLoading(text, sub) {
+  document.getElementById('loadingText').textContent = text || 'Organizing your list...';
+  document.getElementById('loadingSub').textContent = sub || 'This takes about 5 seconds';
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(() => { t.classList.remove('show'); }, 3000);
+}
+
+async function organizeText() {
+  const raw = document.getElementById('rawText').value.trim();
+  if (!raw) { showToast('Please paste a grocery list first', true); return; }
+  showLoading('Reading your list...', 'Fixing typos and sorting by aisle');
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: raw }]
+      })
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    await handleAPIResponse(res);
+  } catch(e) {
+    hideLoading();
+    if (!navigator.onLine) {
+      showToast('No internet connection. Please check your WiFi.', true);
+    } else {
+      showToast('Something went wrong. Please try again.', true);
+    }
+    console.error(e);
+  }
+}
+
+async function organizePhoto() {
+  if (!selectedImageBase64) return;
+  showLoading('Reading your photo...', 'Detecting items from the list');
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1500,
+        system: SYSTEM_PROMPT,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: selectedImageType, data: selectedImageBase64 } },
+            { type: "text", text: "This is a photo of a grocery list (may be handwritten or printed, English or Arabic). Please read all items carefully and return the JSON array." }
+          ]
+        }]
+      })
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    await handleAPIResponse(res);
+  } catch(e) {
+    hideLoading();
+    if (!navigator.onLine) {
+      showToast('No internet connection. Please check your WiFi.', true);
+    } else {
+      showToast('Could not read the photo. Try a clearer image.', true);
+    }
+    console.error(e);
+  }
+}
+
+async function handleAPIResponse(res) {
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  let text = data.content[0].text.trim().replace(/```json|```/g, '').trim();
+  items = JSON.parse(text);
+  checked = {};
+  renderList();
+  hideLoading();
+  document.getElementById('inputView').style.display = 'none';
+  document.getElementById('listView').style.display = 'block';
+  document.getElementById('printDate').textContent = 'Generated: ' + new Date().toLocaleDateString('en-KW', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  updateHeader();
+  showToast(`✓ ${items.length} items organized!`);
+}
+
+function renderList() {
+  const grouped = {};
+  Object.keys(CATEGORIES).forEach(cat => {
+    const ci = items.filter(i => i.category === cat);
+    if (ci.length) grouped[cat] = ci;
+  });
+  let html = '';
+  for (const [cat, ci] of Object.entries(grouped)) {
+    html += `<div class="cat-section"><div class="cat-header"><span class="cat-icon">${CATEGORIES[cat]}</span><span class="cat-name">${cat}</span></div>`;
+    ci.forEach(item => { html += renderItem(item); });
+    html += `</div>`;
+  }
+  document.getElementById('groupedList').innerHTML = html;
+  updateProgress();
+  updateDoneMsg();
+}
+
+function renderItem(item) {
+  const isc = checked[item.id];
+  if (editingId === item.id) {
+    return `<div class="item-card"><div class="edit-form">
+      <input id="en-${item.id}" value="${esc(item.name)}" placeholder="Item name">
+      <div class="row-2">
+        <input id="eq-${item.id}" value="${esc(item.qty||'1')}" placeholder="Qty">
+        <input id="eno-${item.id}" value="${esc(item.note||'')}" placeholder="Note (Frozen, Almarai, 2L...)">
+      </div>
+      <select id="ec-${item.id}">${Object.keys(CATEGORIES).map(c=>`<option value="${c}"${item.category===c?' selected':''}>${CATEGORIES[c]} ${c}</option>`).join('')}</select>
+      <div class="btn-row">
+        <button class="btn-save" onclick="saveEdit(${item.id})">Save</button>
+        <button class="btn-cancel" onclick="cancelEdit()">Cancel</button>
+      </div></div></div>`;
+  }
+  const hasQty = item.qty && item.qty !== '1';
+  return `<div class="item-card${isc?' checked':''}">
+    <div class="item-row">
+      <div class="checkbox${isc?' checked':''}" onclick="toggleCheck(${item.id})">${isc?'✓':''}</div>
+      <div class="item-info">
+        <span class="item-name${isc?' checked':''}">${esc(item.name)}</span>
+        ${(hasQty||item.note)?`<div class="item-meta">
+          ${hasQty?`<span class="item-qty">×${esc(item.qty)}</span>`:''}
+          ${item.note?`<span class="item-note">${esc(item.note)}</span>`:''}
+        </div>`:''}
+      </div>
+      <div class="item-actions">
+        <button class="btn-icon btn-edit" onclick="startEdit(${item.id})">✏️</button>
+        <button class="btn-icon btn-del" onclick="deleteItem(${item.id})">✕</button>
+      </div>
+    </div></div>`;
+}
+
+function shareList() {
+  const grouped = {};
+  Object.keys(CATEGORIES).forEach(cat => {
+    const ci = items.filter(i => i.category === cat);
+    if (ci.length) grouped[cat] = ci;
+  });
+  let text = '🛒 LuLu Grocery List\n';
+  text += new Date().toLocaleDateString('en-KW') + '\n\n';
+  for (const [cat, ci] of Object.entries(grouped)) {
+    text += `${CATEGORIES[cat]} ${cat}\n`;
+    ci.forEach(item => {
+      text += `  • ${item.name}`;
+      if (item.qty && item.qty !== '1') text += ` (×${item.qty})`;
+      if (item.note) text += ` — ${item.note}`;
+      text += '\n';
+    });
+    text += '\n';
+  }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('✓ List copied to clipboard!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✓ List copied to clipboard!');
+  }
+}
+
+function doPrint() {
+  document.getElementById('printHeader').style.display = 'block';
+  window.print();
+  setTimeout(() => { document.getElementById('printHeader').style.display = 'none'; }, 500);
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toggleCheck(id){checked[id]=!checked[id];renderList();updateHeader();}
+function startEdit(id){editingId=id;renderList();}
+function cancelEdit(){editingId=null;renderList();}
+function saveEdit(id){
+  const name=document.getElementById(`en-${id}`).value.trim();
+  if(!name)return;
+  items=items.map(i=>i.id===id?{...i,name,qty:document.getElementById(`eq-${id}`).value,note:document.getElementById(`eno-${id}`).value,category:document.getElementById(`ec-${id}`).value}:i);
+  editingId=null;renderList();showToast('✓ Item updated');
+}
+function deleteItem(id){items=items.filter(i=>i.id!==id);delete checked[id];renderList();updateHeader();}
+function updateProgress(){
+  const t=items.length,d=Object.values(checked).filter(Boolean).length;
+  document.getElementById('progressFill').style.width=(t?(d/t)*100:0)+'%';
+}
+function updateDoneMsg(){
+  const t=items.length,d=Object.values(checked).filter(Boolean).length;
+  document.getElementById('doneMsg').innerHTML=(d===t&&t>0)?'<div class="done-msg">🎉 All items added to your LuLu cart!</div>':'';
+}
+function updateHeader(){
+  const t=items.length,d=Object.values(checked).filter(Boolean).length;
+  document.getElementById('headerRight').innerHTML=`<span class="badge">${d}/${t} done</span><button class="btn-sm" onclick="askNewList()">New List</button>`;
+}
+function askNewList(){
+  document.getElementById('confirmOverlay').classList.remove('hidden');
+}
+function confirmNewList(){
+  document.getElementById('confirmOverlay').classList.add('hidden');
+  items=[];checked={};editingId=null;selectedImageBase64=null;
+  document.getElementById('rawText').value='';
+  document.getElementById('fileInput').value='';
+  document.getElementById('photoArea').innerHTML='<div class="photo-icon">📷</div><div class="photo-label">Tap to take photo or choose from gallery</div><div class="photo-sublabel">JPG, PNG supported</div>';
+  document.getElementById('photoArea').onclick=()=>document.getElementById('fileInput').click();
+  document.getElementById('photoBtn').disabled=true;
+  document.getElementById('listView').style.display='none';
+  document.getElementById('inputView').style.display='block';
+  document.getElementById('headerRight').innerHTML='';
+  switchTab('text');
+}
+function showAddForm(){
+  document.getElementById('addSection').innerHTML=`<div class="add-form">
+    <input id="aname" placeholder="Item name">
+    <div class="row-2"><input id="aqty" value="1" placeholder="Qty"><input id="anote" placeholder="Note (optional)"></div>
+    <select id="acat">${Object.keys(CATEGORIES).map(c=>`<option value="${c}">${CATEGORIES[c]} ${c}</option>`).join('')}</select>
+    <div class="btn-row"><button class="btn-save" onclick="addItem()">Add Item</button><button class="btn-cancel" onclick="resetAdd()">Cancel</button></div>
+  </div>`;
+}
+function addItem(){
+  const name=document.getElementById('aname').value.trim();
+  if(!name)return;
+  items.push({id:Date.now(),name,qty:document.getElementById('aqty').value||'1',note:document.getElementById('anote').value,category:document.getElementById('acat').value});
+  resetAdd();renderList();updateHeader();showToast('✓ Item added');
+}
+function resetAdd(){
+  document.getElementById('addSection').innerHTML='<button class="btn-add-item" onclick="showAddForm()">+ Add missing item</button>';
+}
+</script>
+</body>
+</html>
